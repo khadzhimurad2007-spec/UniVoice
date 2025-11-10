@@ -26,5 +26,4 @@ dist-ssr
 bin/
 obj/
 .env
-.env.local
-.env.*.local
+
