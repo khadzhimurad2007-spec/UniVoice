@@ -1,0 +1,173 @@
+/* ===== Общий Layout ===== */
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    background: #f9f9f9;
+    color: #333;
+}
+
+.navbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #333;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+    .nav-link:hover {
+        background: #f0f0f0;
+    }
+
+    .nav-link.active {
+        background: #e8f0ff;
+        color: #1a73e8;
+        font-weight: 600;
+    }
+
+.content {
+    flex: 1;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+/* ===== Чат ===== */
+.chat-window {
+    border: 1px solid #ccc;
+    padding: 10px;
+    height: 360px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.user-msg {
+    text-align: right;
+    background: #d1ffd1;
+    margin: 6px;
+    padding: 8px;
+    border-radius: 8px;
+    display: inline-block;
+    max-width: 75%;
+}
+
+.gpt-msg {
+    text-align: left;
+    background: #f0f0f0;
+    margin: 6px;
+    padding: 8px;
+    border-radius: 8px;
+    display: inline-block;
+    max-width: 75%;
+}
+
+    .gpt-msg.loading {
+        opacity: 0.8;
+        font-style: italic;
+    }
+
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+    .chat-input-row textarea {
+        flex: 1;
+        resize: vertical;
+        min-height: 48px;
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+    .chat-input-row button {
+        background: #1a73e8;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+        .chat-input-row button:hover:not(:disabled) {
+            background: #1669d8;
+        }
+
+        .chat-input-row button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+/* ===== Формы и списки ===== */
+.schedule-form,
+.reminders-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.schedule-list ul,
+.reminders-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.schedule-item,
+.reminder-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #fff;
+}
+
+    .schedule-item button,
+    .reminder-item button {
+        background: #ff5252;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+        .schedule-item button:hover:not(:disabled),
+        .reminder-item button:hover:not(:disabled) {
+            background: #e04848;
+        }
+
+        .schedule-item button:disabled,
+        .reminder-item button:disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+/* ===== Ошибки ===== */
+.error {
+    margin: 8px 0;
+    padding: 8px 10px;
+    background: #ffecec;
+    color: #b00020;
+    border: 1px solid #ffb3b3;
+    border-radius: 6px;
+}
