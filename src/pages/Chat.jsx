@@ -158,7 +158,7 @@ export default function ChatPage() {
                     <div style={{color: 'white', lineHeight: '1.6'}}>
                         • "Где найти расписание?"<br/>
                         • "Какие сегодня пары?"<br/>
-                        • "Информация о факультетах"<br/>
+                        
                         • "Как пользоваться голосовым управлением?"
                     </div>
                 </div>
