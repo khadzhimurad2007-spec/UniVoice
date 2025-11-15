@@ -1,20 +1,17 @@
-import { loginWithGoogle, logout, auth } from "../firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-export default function Home() {
-    const [user] = useAuthState(auth);
-
+export default function HomePage() {
     return (
         <div>
             <h1>Главная страница UniVoice</h1>
-            {user ? (
-                <>
-                    <p>Привет, {user.displayName}</p>
-                    <button onClick={logout}>Выйти</button>
-                </>
-            ) : (
-                <button onClick={loginWithGoogle}>Войти через Google</button>
-            )}
+            <button>Войти через Google</button>
+
+            <nav style={{ marginTop: 20 }}>
+                <Link to="/schedule">📅 Расписание</Link><br />
+                <Link to="/chatgpt">💬 Чат GPT</Link><br />
+                <Link to="/reminders">⏰ Напоминания</Link>
+            </nav>
         </div>
     );
 }

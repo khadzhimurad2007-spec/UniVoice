@@ -1,43 +1,37 @@
-import { NavLink, Routes, Route } from "react-router-dom";
-import "./App.css";
+import React from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useVoice } from './hooks/useVoice';
+import Navbar from './components/Navbar';
+import VoiceBar from './components/VoiceBar';
 
-import Home from "./pages/Home";
-import Schedule from "./pages/Schedule";
-import Chat from "./pages/Chat";
-import Reminders from "./pages/Reminders";
+import HomePage from './pages/home.jsx';
+import SchedulePage from './pages/Schedule.jsx';
+import ChatPage from './pages/Chat.jsx';
+import RemindersPage from './pages/Reminders.jsx';
 
 export default function App() {
-    const getLinkClass = ({ isActive }) =>
-        isActive ? "nav-link active" : "nav-link";
+    const navigate = useNavigate();
+    const voice = useVoice({ navigate });
 
     return (
-        <div className="container">
-            <header>
-                <h1>UniVoice</h1>
-                <nav className="navbar">
-                    <NavLink to="/" end className={getLinkClass}>
-                        Главная
-                    </NavLink>
-                    <NavLink to="/schedule" className={getLinkClass}>
-                        Расписание
-                    </NavLink>
-                    <NavLink to="/chat" className={getLinkClass}>
-                        Чат
-                    </NavLink>
-                    <NavLink to="/reminders" className={getLinkClass}>
-                        Напоминания
-                    </NavLink>
-                </nav>
-            </header>
+        <div style={{ paddingBottom: 80 }}>
+            <Navbar />
 
-            <main className="content">
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/schedule" element={<Schedule />} />
-                    <Route path="/chat" element={<Chat />} />
-                    <Route path="/reminders" element={<Reminders />} />
-                </Routes>
-            </main>
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/chatgpt" element={<ChatPage />} />
+                <Route path="/reminders" element={<RemindersPage />} />
+            </Routes>
+
+            <VoiceBar
+                isSupported={voice.isSupported}
+                isListening={voice.isListening}
+                status={voice.status}
+                lastPhrase={voice.lastPhrase}
+                onStart={voice.startListening}
+                onStop={voice.stopListening}
+            />
         </div>
     );
 }
