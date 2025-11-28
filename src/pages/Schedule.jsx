@@ -1,10 +1,104 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Schedule() {
-    const [group, setGroup] = useState("");
-    const [html, setHtml] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    // Инициализируем состояние сразу из localStorage
+    const [schedule, setSchedule] = useState(() => {
+        try {
+            const savedSchedule = localStorage.getItem('univoice_schedule');
+            return savedSchedule ? JSON.parse(savedSchedule) : [];
+        } catch (error) {
+            console.error('Ошибка инициализации расписания:', error);
+            return [];
+        }
+    });
+
+    const [newSubject, setNewSubject] = useState("");
+    const [day, setDay] = useState("Понедельник");
+    const [startTime, setStartTime] = useState("08:30");
+    const [endTime, setEndTime] = useState("10:00");
+    const [room, setRoom] = useState("");
+    const [teacher, setTeacher] = useState("");
+
+    const daysOfWeek = [
+        "Понедельник",
+        "Вторник",
+        "Среда",
+        "Четверг",
+        "Пятница",
+        "Суббота"
+    ];
+
+    // Сохранение расписания в localStorage при каждом изменении
+    useEffect(() => {
+        localStorage.setItem('univoice_schedule', JSON.stringify(schedule));
+    }, [schedule]);
+
+    const addSubject = () => {
+        if (!newSubject.trim() || !startTime || !endTime) return;
+
+        if (startTime >= endTime) {
+            alert("Время окончания должно быть позже времени начала");
+            return;
+        }
+
+        const newItem = {
+            id: Date.now(),
+            subject: newSubject.trim(),
+            day,
+            startTime,
+            endTime,
+            room: room.trim(),
+            teacher: teacher.trim()
+        };
+
+        setSchedule(prev => [...prev, newItem]);
+        setNewSubject("");
+        setStartTime("08:30");
+        setEndTime("10:00");
+        setRoom("");
+        setTeacher("");
+    };
+
+    const deleteSubject = (id) => {
+        setSchedule(prev => prev.filter(item => item.id !== id));
+    };
+
+    const getSubjectsByDay = (dayName) => {
+        return schedule
+            .filter(item => item.day === dayName)
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    };
+
+    // Функция для получения статуса занятия
+    const getClassStatus = (item) => {
+        const now = new Date();
+        const today = now.toLocaleString('ru-RU', { weekday: 'long' });
+
+        // Приводим к правильному регистру для сравнения
+        const currentDay = today.charAt(0).toUpperCase() + today.slice(1);
+
+        if (currentDay !== item.day) return "not_today";
+
+        const [startHour, startMinute] = item.startTime.split(':').map(Number);
+        const [endHour, endMinute] = item.endTime.split(':').map(Number);
+
+        const classStart = new Date();
+        classStart.setHours(startHour, startMinute, 0, 0);
+
+        const classEnd = new Date();
+        classEnd.setHours(endHour, endMinute, 0, 0);
+
+        if (now < classStart) return "not_started";
+        if (now > classEnd) return "finished";
+        return "in_progress";
+    };
+
+    // Очистка всего расписания
+    const clearAllSchedule = () => {
+        if (window.confirm("Вы уверены, что хотите удалить всё расписание?")) {
+            setSchedule([]);
+        }
+    };
 
     const containerStyle = {
         minHeight: '100vh',
@@ -33,116 +127,281 @@ export default function Schedule() {
     };
 
     const inputStyle = {
-        padding: '15px',
-        fontSize: '16px',
+        padding: '12px',
+        fontSize: '14px',
         border: '2px solid #FFD700',
-        borderRadius: '10px',
-        marginRight: '10px',
-        width: '300px',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)'
+        borderRadius: '8px',
+        marginRight: '8px',
+        marginBottom: '8px',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        color: '#003366',
+        width: '100%'
+    };
+
+    const selectStyle = {
+        ...inputStyle,
+        minWidth: '150px'
+    };
+
+    const timeInputStyle = {
+        ...inputStyle,
+        width: '120px'
     };
 
     const buttonStyle = {
-        padding: '15px 30px',
-        fontSize: '16px',
+        padding: '12px 24px',
+        fontSize: '14px',
         backgroundColor: '#FFD700',
         color: '#003366',
         border: 'none',
-        borderRadius: '10px',
+        borderRadius: '8px',
         fontWeight: 'bold',
         cursor: 'pointer',
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        marginBottom: '8px'
     };
 
-    const loadingStyle = {
-        textAlign: 'center',
-        fontSize: '18px',
-        color: '#FFD700',
-        margin: '20px 0'
+    const clearButtonStyle = {
+        ...buttonStyle,
+        backgroundColor: '#dc3545',
+        color: 'white'
     };
 
-    const errorStyle = {
-        color: '#ff6b6b',
-        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-        padding: '15px',
-        borderRadius: '10px',
-        margin: '20px 0',
-        border: '1px solid #ff6b6b'
-    };
-
-    const scheduleStyle = {
-        marginTop: '30px',
-        background: 'white',
+    const dayCardStyle = {
+        background: 'rgba(255, 255, 255, 0.95)',
         borderRadius: '10px',
         padding: '20px',
+        marginBottom: '20px',
         color: '#333',
-        overflow: 'auto'
+        border: '2px solid #FFD700'
     };
 
-    async function loadSchedule() {
-        if (!group.trim()) return;
-        setLoading(true);
-        setError("");
-        setHtml("");
+    const subjectItemStyle = {
+        background: '#f8f9fa',
+        border: '1px solid #dee2e6',
+        borderRadius: '8px',
+        padding: '15px',
+        marginBottom: '10px',
+        position: 'relative'
+    };
 
-        const madiUrl = `https://raspisanie.madi.ru/tplan/?group=${encodeURIComponent(group.trim())}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(madiUrl)}`;
+    const deleteButtonStyle = {
+        background: '#dc3545',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        padding: '5px 10px',
+        cursor: 'pointer',
+        fontSize: '12px',
+        marginLeft: '10px'
+    };
 
-        try {
-            const res = await fetch(proxyUrl);
-            const text = await res.text();
-            if (text.includes("<table")) {
-                setHtml(text);
-            } else {
-                setError("Расписание не найдено или формат изменился.");   
-            }
-        } catch (e) {
-            setError("Ошибка загрузки. Проверьте подключение или попробуйте позже.");
-        } finally {
-            setLoading(false);
+    const subjectContentStyle = {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%'
+    };
+
+    const statusBadgeStyle = (status) => {
+        const baseStyle = {
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            marginLeft: '8px'
+        };
+
+        switch (status) {
+            case 'in_progress':
+                return { ...baseStyle, backgroundColor: '#d4edda', color: '#155724' };
+            case 'finished':
+                return { ...baseStyle, backgroundColor: '#e2e3e5', color: '#383d41' };
+            case 'not_started':
+                return { ...baseStyle, backgroundColor: '#fff3cd', color: '#856404' };
+            default:
+                return { ...baseStyle, backgroundColor: '#e2e3e5', color: '#383d41' };
         }
-    }
+    };
 
     return (
         <div style={containerStyle}>
             <div style={contentStyle}>
-                <h1 style={titleStyle}>📅 Расписание МАДИ</h1>
-                
-                <div style={{textAlign: 'center', marginBottom: '30px'}}>
-                    <input
-                        value={group}
-                        onChange={(e) => setGroup(e.target.value)}
-                        placeholder="Введите группу (например, АСУ-31)"
-                        style={inputStyle}
-                    />
-                    <button 
-                        onClick={loadSchedule} 
-                        disabled={loading}
-                        style={buttonStyle}
-                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                    >
-                        {loading ? "Загрузка..." : "Показать расписание"}
-                    </button>
+                <h1 style={titleStyle}>📅 Расписание</h1>
+
+                {/* Форма добавления занятия */}
+                <div style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '10px',
+                    padding: '20px',
+                    marginBottom: '30px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                    <h3 style={{ color: '#FFD700', marginBottom: '15px' }}>Добавить занятие</h3>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                        <input
+                            value={newSubject}
+                            onChange={(e) => setNewSubject(e.target.value)}
+                            placeholder="Название предмета"
+                            style={inputStyle}
+                        />
+
+                        <select
+                            value={day}
+                            onChange={(e) => setDay(e.target.value)}
+                            style={selectStyle}
+                        >
+                            {daysOfWeek.map(day => (
+                                <option key={day} value={day}>{day}</option>
+                            ))}
+                        </select>
+
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <input
+                                type="time"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                style={timeInputStyle}
+                            />
+                            <span style={{ color: '#FFD700' }}>—</span>
+                            <input
+                                type="time"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                style={timeInputStyle}
+                            />
+                        </div>
+
+                        <input
+                            value={room}
+                            onChange={(e) => setRoom(e.target.value)}
+                            placeholder="Аудитория"
+                            style={inputStyle}
+                        />
+
+                        <input
+                            value={teacher}
+                            onChange={(e) => setTeacher(e.target.value)}
+                            placeholder="Преподаватель"
+                            style={inputStyle}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button
+                            onClick={addSubject}
+                            disabled={!newSubject.trim() || !startTime || !endTime}
+                            style={{
+                                ...buttonStyle,
+                                opacity: (!newSubject.trim() || !startTime || !endTime) ? 0.6 : 1
+                            }}
+                            onMouseEnter={(e) => {
+                                if (newSubject.trim() && startTime && endTime) {
+                                    e.target.style.transform = 'scale(1.05)';
+                                }
+                            }}
+                            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                        >
+                            ➕ Добавить занятие
+                        </button>
+
+                        {schedule.length > 0 && (
+                            <button
+                                onClick={clearAllSchedule}
+                                style={clearButtonStyle}
+                                onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                            >
+                                🗑️ Очистить всё
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {error && <div style={errorStyle}>{error}</div>}
+                {/* Расписание по дням недели */}
+                <div style={{ marginTop: '30px' }}>
+                    {daysOfWeek.map(dayName => {
+                        const daySubjects = getSubjectsByDay(dayName);
 
-                {loading && <div style={loadingStyle}>⏳ Загружаем расписание...</div>}
+                        return (
+                            <div key={dayName} style={dayCardStyle}>
+                                <h3 style={{
+                                    color: '#003366',
+                                    marginBottom: '15px',
+                                    paddingBottom: '10px',
+                                    borderBottom: '2px solid #FFD700'
+                                }}>
+                                    {dayName} {daySubjects.length > 0 && `(${daySubjects.length})`}
+                                </h3>
 
-                {html && (
-                    <div style={scheduleStyle}>
-                        <h3 style={{color: '#003366', marginBottom: '15px'}}>Расписание для группы: {group}</h3>
-                        <div dangerouslySetInnerHTML={{ __html: html }} />
-                    </div>
-                )}
+                                {daySubjects.length === 0 ? (
+                                    <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
+                                        Занятий нет
+                                    </p>
+                                ) : (
+                                    daySubjects.map(item => {
+                                        const status = getClassStatus(item);
+                                        const statusText = {
+                                            'not_today': '',
+                                            'not_started': 'Не началось',
+                                            'in_progress': 'Идет сейчас',
+                                            'finished': 'Завершено'
+                                        }[status];
 
-                <div style={{marginTop: '30px', padding: '20px', background: 'rgba(255,215,0,0.1)', borderRadius: '10px'}}>
-                    <h4 style={{color: '#FFD700', marginBottom: '10px'}}>ℹ️ Как использовать:</h4>
-                    <ul style={{color: 'white', lineHeight: '1.6'}}>
-                        <li>Введите номер вашей учебной группы</li>
-                        <li>Нажмите "Показать расписание"</li>
-                        <li>Расписание загрузится с официального сайта МАДИ</li>
+                                        return (
+                                            <div key={item.id} style={subjectItemStyle}>
+                                                <div style={subjectContentStyle}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+                                                            <strong style={{ color: '#003366', fontSize: '16px' }}>
+                                                                {item.subject}
+                                                            </strong>
+                                                            {statusText && (
+                                                                <span style={statusBadgeStyle(status)}>
+                                                                    {statusText}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ fontSize: '14px', color: '#666' }}>
+                                                            <div>⏰ {item.startTime} - {item.endTime}</div>
+                                                            {item.room && <div>🏫 Аудитория: {item.room}</div>}
+                                                            {item.teacher && <div>👨‍🏫 Преподаватель: {item.teacher}</div>}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => deleteSubject(item.id)}
+                                                        style={deleteButtonStyle}
+                                                        title="Удалить занятие"
+                                                    >
+                                                        ❌
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Инструкция */}
+                <div style={{
+                    marginTop: '30px',
+                    padding: '20px',
+                    background: 'rgba(255,215,0,0.1)',
+                    borderRadius: '10px'
+                }}>
+                    <h4 style={{ color: '#FFD700', marginBottom: '10px' }}>ℹ️ Как использовать расписание:</h4>
+                    <ul style={{ color: 'white', lineHeight: '1.6' }}>
+                        <li>✅ <strong>Расписание сохраняется автоматически</strong> - даже после перезагрузки страницы</li>
+                        <li>Добавляйте занятия с помощью формы выше</li>
+                        <li>Устанавливайте любое удобное время начала и окончания</li>
+                        <li>Цветные метки показывают статус занятий на сегодня</li>
+                        <li>Удаляйте ненужные занятия кнопкой "❌"</li>
+                        <li>Используйте "Очистить всё" для полного сброса расписания</li>
                     </ul>
                 </div>
             </div>

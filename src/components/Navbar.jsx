@@ -38,8 +38,8 @@ const NavBar = () => {
                 margin: '0 auto'
             }}>
                 {/* Логотип */}
-                <NavLink 
-                    to="/" 
+                <NavLink
+                    to="/"
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -51,9 +51,9 @@ const NavBar = () => {
                     }}
                     onClick={closeMenu}
                 >
-                    <img 
-                        src="https://academica.ru/images/colleges/2501/1690979742_64ca4d9ecbd28.webp" 
-                        alt="МАДИ" 
+                    <img
+                        src="https://academica.ru/images/colleges/2501/1690979742_64ca4d9ecbd28.webp"
+                        alt="МАДИ"
                         style={{
                             width: '40px',
                             height: '40px',
@@ -70,8 +70,8 @@ const NavBar = () => {
                 {/* Десктопное меню */}
                 {!isMobile && (
                     <div style={{ display: 'flex', gap: '15px' }}>
-                        <NavLink 
-                            to="/" 
+                        <NavLink
+                            to="/"
                             style={({ isActive }) => ({
                                 padding: '10px 20px',
                                 color: isActive ? '#003366' : 'white',
@@ -84,8 +84,8 @@ const NavBar = () => {
                         >
                             Главная
                         </NavLink>
-                        <NavLink 
-                            to="/schedule" 
+                        <NavLink
+                            to="/schedule"
                             style={({ isActive }) => ({
                                 padding: '10px 20px',
                                 color: isActive ? '#003366' : 'white',
@@ -96,10 +96,10 @@ const NavBar = () => {
                                 fontSize: '14px'
                             })}
                         >
-                            Расписание
+                            📅 Расписание
                         </NavLink>
-                        <NavLink 
-                            to="/chatgpt" 
+                        <NavLink
+                            to="/chatgpt"
                             style={({ isActive }) => ({
                                 padding: '10px 20px',
                                 color: isActive ? '#003366' : 'white',
@@ -112,8 +112,8 @@ const NavBar = () => {
                         >
                             AI Помощник
                         </NavLink>
-                        <NavLink 
-                            to="/reminders" 
+                        <NavLink
+                            to="/reminders"
                             style={({ isActive }) => ({
                                 padding: '10px 20px',
                                 color: isActive ? '#003366' : 'white',
@@ -132,7 +132,7 @@ const NavBar = () => {
                 {/* Мобильное гамбургер-меню */}
                 {isMobile && (
                     <>
-                        <button 
+                        <button
                             onClick={toggleMenu}
                             style={{
                                 background: 'none',
@@ -165,8 +165,8 @@ const NavBar = () => {
                                 flexDirection: 'column',
                                 gap: '15px'
                             }}>
-                                <NavLink 
-                                    to="/" 
+                                <NavLink
+                                    to="/"
                                     style={({ isActive }) => ({
                                         padding: '15px 20px',
                                         color: isActive ? '#003366' : 'white',
@@ -181,8 +181,8 @@ const NavBar = () => {
                                 >
                                     🏠 Главная
                                 </NavLink>
-                                <NavLink 
-                                    to="/schedule" 
+                                <NavLink
+                                    to="/schedule"
                                     style={({ isActive }) => ({
                                         padding: '15px 20px',
                                         color: isActive ? '#003366' : 'white',
@@ -197,8 +197,8 @@ const NavBar = () => {
                                 >
                                     📅 Расписание
                                 </NavLink>
-                                <NavLink 
-                                    to="/chatgpt" 
+                                <NavLink
+                                    to="/chatgpt"
                                     style={({ isActive }) => ({
                                         padding: '15px 20px',
                                         color: isActive ? '#003366' : 'white',
@@ -213,8 +213,8 @@ const NavBar = () => {
                                 >
                                     🤖 AI Помощник
                                 </NavLink>
-                                <NavLink 
-                                    to="/reminders" 
+                                <NavLink
+                                    to="/reminders"
                                     style={({ isActive }) => ({
                                         padding: '15px 20px',
                                         color: isActive ? '#003366' : 'white',
