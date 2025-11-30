@@ -1,173 +1,466 @@
-/* ===== Общий Layout ===== */
-.app {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: Arial, sans-serif;
-    background: #f9f9f9;
-    color: #333;
+/* ===== СБРОС СТИЛЕЙ ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+/* ===== ЦВЕТОВАЯ ПАЛИТРА ===== */
+:root {
+  --primary: #4361ee;
+  --primary-dark: #3a0ca3;
+  --secondary: #7209b7;
+  --accent: #f72585;
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --text: #2b2d42;
+  --text-light: #6c757d;
+  --border: #e9ecef;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* ===== ОСНОВНЫЕ СТИЛИ ===== */
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: var(--text);
+}
+
+/* ===== КОНТЕЙНЕР ПРИЛОЖЕНИЯ ===== */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== ШАПКА ===== */
 .navbar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 10px 16px;
-    border-bottom: 1px solid #eee;
-    background: #fafafa;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 30px var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  animation: fadeInDown 0.8s ease-out;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
 }
 
 .nav-link {
-    text-decoration: none;
-    color: #333;
-    padding: 6px 10px;
-    border-radius: 6px;
-    transition: background 0.2s, color 0.2s;
+  text-decoration: none;
+  color: var(--text);
+  padding: 0.875rem 2rem;
+  border-radius: 50px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 2px solid transparent;
+  background: var(--surface);
+  box-shadow: 0 4px 15px var(--shadow);
+  position: relative;
+  overflow: hidden;
+  animation: slideInNav 0.5s ease-out;
 }
 
-    .nav-link:hover {
-        background: #f0f0f0;
-    }
+/* Задержка для каждого элемента навигации */
+.nav-link:nth-child(1) { animation-delay: 0.1s; }
+.nav-link:nth-child(2) { animation-delay: 0.2s; }
+.nav-link:nth-child(3) { animation-delay: 0.3s; }
+.nav-link:nth-child(4) { animation-delay: 0.4s; }
 
-    .nav-link.active {
-        background: #e8f0ff;
-        color: #1a73e8;
-        font-weight: 600;
-    }
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  transition: left 0.3s ease;
+  z-index: -1;
+}
 
+.nav-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(67, 97, 238, 0.25);
+  color: var(--surface);
+  border-color: var(--primary);
+  animation: pulse 0.5s ease;
+}
+
+.nav-link:hover::before {
+  left: 0;
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: var(--surface);
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+}
+
+/* ===== ОСНОВНОЙ КОНТЕНТ ===== */
 .content {
-    flex: 1;
-    max-width: 900px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 16px;
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  animation: fadeInUp 0.8s ease-out;
 }
 
-/* ===== Чат ===== */
+/* ===== КАРТОЧКИ ===== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin-bottom: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.glass-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ===== КНОПКИ ===== */
+.primary-btn {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 6px 20px rgba(67, 97, 238, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.primary-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 10px 30px rgba(67, 97, 238, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: pulse 0.5s ease;
+}
+
+.primary-btn:hover::before {
+  left: 100%;
+}
+
+.primary-btn:active {
+  transform: translateY(-1px);
+}
+
+/* ===== ЧАТ ===== */
 .chat-window {
-    border: 1px solid #ccc;
-    padding: 10px;
-    height: 360px;
-    overflow-y: auto;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    background: #fff;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  animation: fadeInUp 0.8s ease-out;
+  height: 450px;
+  overflow-y: auto;
+  margin-bottom: 1.5rem;
 }
 
 .user-msg {
-    text-align: right;
-    background: #d1ffd1;
-    margin: 6px;
-    padding: 8px;
-    border-radius: 8px;
-    display: inline-block;
-    max-width: 75%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  margin: 1rem 0;
+  padding: 1.25rem 1.75rem;
+  border-radius: 24px 24px 8px 24px;
+  max-width: 75%;
+  margin-left: auto;
+  box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+  animation: messageSlideRight 0.3s ease-out;
+  text-align: right;
 }
 
 .gpt-msg {
-    text-align: left;
-    background: #f0f0f0;
-    margin: 6px;
-    padding: 8px;
-    border-radius: 8px;
-    display: inline-block;
-    max-width: 75%;
+  background: var(--surface);
+  color: var(--text);
+  margin: 1rem 0;
+  padding: 1.25rem 1.75rem;
+  border-radius: 24px 24px 24px 8px;
+  max-width: 75%;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  animation: messageSlideLeft 0.3s ease-out;
+  text-align: left;
 }
 
-    .gpt-msg.loading {
-        opacity: 0.8;
-        font-style: italic;
-    }
+.gpt-msg.loading {
+  opacity: 0.8;
+  font-style: italic;
+}
 
 .chat-input-row {
-    display: flex;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
 }
 
-    .chat-input-row textarea {
-        flex: 1;
-        resize: vertical;
-        min-height: 48px;
-        padding: 6px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-    }
+.chat-input-row textarea {
+  flex: 1;
+  resize: vertical;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all 0.3s ease;
+}
 
-    .chat-input-row button {
-        background: #1a73e8;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 8px 14px;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
+.chat-input-row textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
 
-        .chat-input-row button:hover:not(:disabled) {
-            background: #1669d8;
-        }
+.chat-input-row button {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
 
-        .chat-input-row button:disabled {
-            opacity: 0.6;
-            cursor: default;
-        }
+.chat-input-row button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+}
 
-/* ===== Формы и списки ===== */
+.chat-input-row button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+/* ===== ФОРМЫ И СПИСКИ ===== */
 .schedule-form,
 .reminders-form {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .schedule-list ul,
 .reminders-list ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .schedule-item,
 .reminder-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  background: var(--surface);
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.5s ease-out;
 }
 
-    .schedule-item button,
-    .reminder-item button {
-        background: #ff5252;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 10px;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
+.schedule-item:hover,
+.reminder-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
 
-        .schedule-item button:hover:not(:disabled),
-        .reminder-item button:hover:not(:disabled) {
-            background: #e04848;
-        }
+.schedule-item button,
+.reminder-item button {
+  background: linear-gradient(135deg, #ff5252, #e04848);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
 
-        .schedule-item button:disabled,
-        .reminder-item button:disabled {
-            opacity: 0.7;
-            cursor: default;
-        }
+.schedule-item button:hover:not(:disabled),
+.reminder-item button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.3);
+}
 
-/* ===== Ошибки ===== */
+.schedule-item button:disabled,
+.reminder-item button:disabled {
+  opacity: 0.7;
+  cursor: default;
+  transform: none;
+}
+
+/* ===== ОШИБКИ ===== */
 .error {
-    margin: 8px 0;
-    padding: 8px 10px;
-    background: #ffecec;
-    color: #b00020;
-    border: 1px solid #ffb3b3;
-    border-radius: 6px;
+  margin: 8px 0;
+  padding: 12px 16px;
+  background: #ffecec;
+  color: #b00020;
+  border: 1px solid #ffb3b3;
+  border-radius: 12px;
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ===== АНИМАЦИИ ===== */
+
+/* Появление сверху */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Появление снизу */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Пульсация */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Анимация навигации */
+@keyframes slideInNav {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Анимация сообщений */
+@keyframes messageSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes messageSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Анимация тряски для ошибок */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Анимация загрузки */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin: 20px auto;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+  .navbar {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .nav-link {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .content {
+    padding: 2rem 1rem;
+  }
+  
+  .glass-card {
+    padding: 1.5rem;
+    border-radius: 20px;
+  }
+  
+  .message-user,
+  .message-bot {
+    max-width: 90%;
+  }
+  
+  .chat-input-row {
+    flex-direction: column;
+  }
 }
