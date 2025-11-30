@@ -110,7 +110,7 @@ const NavBar = () => {
                                 fontSize: '14px'
                             })}
                         >
-                            AI Помощник
+                            ЧАТ Помощник
                         </NavLink>
                         <NavLink
                             to="/reminders"
