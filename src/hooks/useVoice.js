@@ -7,41 +7,59 @@ export function useVoice({ navigate, tts = true }) {
     const [isSupported, setIsSupported] = useState(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
     const [isListening, setIsListening] = useState(false);
     const [lastPhrase, setLastPhrase] = useState('');
-    const [status, setStatus] = useState('idle'); // idle | listening | error
+    const [status, setStatus] = useState('idle');
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
     const recogRef = useRef(null);
     const nluRef = useRef(null);
     const listeningRef = useRef(false);
+    const wakeWordDetectedRef = useRef(false);
 
     const speak = (text) => {
         if (!tts || !window.speechSynthesis) return;
+
+        window.speechSynthesis.cancel();
+
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'ru-RU';
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utter);
-    };
 
-    const createCalendarEvent = async ({ title, when, sourcePhrase }) => {
-        console.log('createCalendarEvent', { title, when, sourcePhrase });
-        // Здесь можешь подключить свой сервис календаря
-    };
-    const createReminder = async ({ title, when, sourcePhrase }) => {
-        console.log('createReminder', { title, when, sourcePhrase });
-        // Если используешь services/ReminderService.js напрямую в commandCatalog,
-        // эта заглушка не понадобится.
+        setIsSpeaking(true);
+
+        // Временно останавливаем распознавание во время речи
+        if (listeningRef.current) {
+            recogRef.current?.stop();
+        }
+
+        window.speechSynthesis.speak(utter);
+
+        utter.onend = () => {
+            setIsSpeaking(false);
+            // Возобновляем распознавание после речи, если были в режиме listening
+            if (listeningRef.current) {
+                setTimeout(() => {
+                    try {
+                        recogRef.current?.start();
+                    } catch (e) {
+                        console.log('Restart after speech failed:', e);
+                    }
+                }, 500);
+            }
+        };
     };
 
     const startListening = () => {
-        if (!recogRef.current) return;
+        if (!recogRef.current || isSpeaking) return;
         try {
             recogRef.current.start();
             setIsListening(true);
             listeningRef.current = true;
             setStatus('listening');
+            wakeWordDetectedRef.current = false;
         } catch (e) {
-            console.error(e);
+            console.error('Start listening error:', e);
         }
     };
+
     const stopListening = () => {
         if (!recogRef.current) return;
         try {
@@ -49,8 +67,9 @@ export function useVoice({ navigate, tts = true }) {
             setIsListening(false);
             listeningRef.current = false;
             setStatus('idle');
+            wakeWordDetectedRef.current = false;
         } catch (e) {
-            console.error(e);
+            console.error('Stop listening error:', e);
         }
     };
 
@@ -61,30 +80,52 @@ export function useVoice({ navigate, tts = true }) {
                 continuous: true,
                 interimResults: true,
                 onStart: () => setStatus('listening'),
-                onEnd: () => setStatus(listeningRef.current ? 'listening' : 'idle'),
+                onEnd: () => {
+                    if (!isSpeaking) {
+                        setStatus(listeningRef.current ? 'listening' : 'idle');
+                    }
+                },
                 onError: (e) => {
-                    console.error(e);
+                    console.error('Speech recognition error:', e);
                     setStatus('error');
+                    // Автоматически перезапускаем при ошибках
+                    if (listeningRef.current) {
+                        setTimeout(() => {
+                            try {
+                                recogRef.current?.start();
+                            } catch (err) {
+                                console.log('Auto-restart failed:', err);
+                            }
+                        }, 1000);
+                    }
                 },
                 onResult: async ({ transcript, isFinal }) => {
-                    setLastPhrase(transcript);
-                    const normalized = (transcript || '').toLowerCase();
+                    // Игнорируем распознавание во время речи ассистента
+                    if (isSpeaking) return;
 
-                    // Wake words: автозапуск микрофона по "юнивойс"
-                    const wakeWords = ['юнивойс', 'унивойс', 'univoice'];
+                    setLastPhrase(transcript);
+                    const normalized = (transcript || '').toLowerCase().trim();
+
+                    // Wake words detection - ДЕТЕКТИМ ТРИГГЕРНЫЕ СЛОВА ПОСТОЯННО
+                    const wakeWords = ['юни', 'юнивойс', 'уни', 'унивойс', 'univoice', 'uni'];
                     const woke = wakeWords.some((w) => normalized.includes(w));
 
-                    // Автоматическое включение, если услышали wake word и сейчас не слушаем
-                    if (woke && !listeningRef.current) {
+                    // 🔥 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Автоактивация работает ВСЕГДА, даже когда не слушаем
+                    if (woke && !listeningRef.current && !isSpeaking && !wakeWordDetectedRef.current) {
+                        wakeWordDetectedRef.current = true;
+                        console.log('🔥 Wake word detected, starting listening...');
                         startListening();
-                        speak('Слушаю.');
+                        setTimeout(() => {
+                            speak('Слушаю вас.');
+                        }, 300);
                         return;
                     }
 
-                    // Если режим не активен — не маршрутизируем команды
+                    // Если режим не активен — не обрабатываем команды
                     if (!listeningRef.current) return;
 
-                    if (isFinal) {
+                    if (isFinal && normalized.length > 2) { // Минимум 3 символа
+                        console.log('Processing command:', normalized);
                         await routeCommand({
                             phrase: transcript,
                             context: {
@@ -92,22 +133,25 @@ export function useVoice({ navigate, tts = true }) {
                                 navigate,
                                 startListening,
                                 stopListening,
-                                createCalendarEvent,
-                                createReminder,
-                                nlu: nluRef.current
+                                nlu: nluRef.current,
+                                isSpeaking
                             }
                         });
                     }
                 }
             });
 
-            // Опционально: NLU через OpenAI (если есть ключ в .env)
+            // 🔥 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: СРАЗУ ЗАПУСКАЕМ РАСПОЗНАВАНИЕ ДЛЯ ДЕТЕКЦИИ ТРИГГЕРНЫХ СЛОВ
+            console.log('Starting continuous recognition for wake word detection...');
+            recogRef.current.start();
+
+            // NLU через OpenAI (если есть ключ)
             const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
             if (apiKey) {
                 nluRef.current = new NLU({ apiKey });
             }
         } catch (e) {
-            console.error(e);
+            console.error('Voice hook initialization error:', e);
             setIsSupported(false);
             setStatus('error');
         }
@@ -116,8 +160,8 @@ export function useVoice({ navigate, tts = true }) {
             stopListening();
             recogRef.current = null;
             nluRef.current = null;
+            window.speechSynthesis.cancel();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return {
@@ -125,6 +169,7 @@ export function useVoice({ navigate, tts = true }) {
         isListening,
         lastPhrase,
         status,
+        isSpeaking,
         startListening,
         stopListening,
         speak

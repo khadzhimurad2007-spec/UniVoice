@@ -11,17 +11,34 @@ export function findCommandByRule(phrase) {
 }
 
 export async function routeCommand({ phrase, context }) {
+    // Если фраза слишком короткая - игнорируем
+    if (!phrase || phrase.trim().length < 2) return;
+
     const cmd = findCommandByRule(phrase);
     if (cmd) {
-        return cmd.handler(context);
+        await cmd.handler({ ...context, phrase });
+        return;
     }
-    // Если нет точного совпадения — попробуем NLU (если подключён)
+
+    // Если нет точного совпадения — пробуем NLU (если подключён)
     if (context.nlu) {
         const intent = await context.nlu.classifyIntent(phrase);
         if (intent && intent.handlerId) {
             const target = commandCatalog.find(c => c.id === intent.handlerId);
-            if (target) return target.handler(context);
+            if (target) {
+                await target.handler({ ...context, phrase });
+                return;
+            }
         }
     }
-    context.speak('Не уверена, что вы имели в виду. Скажите: «помощь» — чтобы узнать команды.');
+
+    // Обрабатываем как вопрос к GPT
+    const generalQuestionCmd = commandCatalog.find(c => c.id === 'generalQuestion');
+    if (generalQuestionCmd) {
+        await generalQuestionCmd.handler({ ...context, phrase });
+        return;
+    }
+
+    // Fallback ответ
+    context.speak('Я не могу это сделать. Вы можете задать вопрос или сказать "помощь" для списка команд.');
 }
