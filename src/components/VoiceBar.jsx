@@ -4,15 +4,15 @@ export default function VoiceBar({ isSupported, isListening, status, lastPhrase,
     if (!isSupported) return null;
 
     const getStatusColor = () => {
-        if (isSpeaking) return '#FFA500'; // оранжевый когда говорит
-        if (isListening) return '#28a745'; // зеленый когда слушает
-        if (status === 'wake-word-mode') return '#17a2b8'; // синий когда ждет wake word
-        return '#6c757d'; // серый
+        if (isSpeaking) return '#FFA500';
+        if (isListening) return '#28a745';
+        if (status === 'wake-word-mode') return '#17a2b8';
+        return '#6c757d';
     };
 
     const getStatusText = () => {
         if (isSpeaking) return 'Говорит...';
-        if (isListening) return 'Слушает...';
+        if (isListening) return 'Слушает команды';
         if (status === 'wake-word-mode') return 'Жду "Юни"...';
         return 'Готов к работе';
     };

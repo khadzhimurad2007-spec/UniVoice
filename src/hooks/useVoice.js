@@ -14,10 +14,19 @@ export function useVoice({ navigate, tts = true }) {
     const nluRef = useRef(null);
     const listeningRef = useRef(false);
     const wakeWordDetectedRef = useRef(false);
+    const shouldRestartRef = useRef(true);
+    const speechBlockedRef = useRef(false);
+    const lastCommandTimeRef = useRef(0);
+    const isStoppedRef = useRef(false); // 🔥 НОВЫЙ ФЛАГ: отслеживаем ручную остановку
 
     const speak = (text) => {
         if (!tts || !window.speechSynthesis) return;
 
+        // 🔥 ПОЛНАЯ БЛОКИРОВКА РАСПОЗНАВАНИЯ НА ВРЕМЯ РЕЧИ
+        speechBlockedRef.current = true;
+        console.log('🔇 BLOCKING recognition during TTS');
+
+        // Останавливаем предыдущую речь
         window.speechSynthesis.cancel();
 
         const utter = new SpeechSynthesisUtterance(text);
@@ -25,26 +34,52 @@ export function useVoice({ navigate, tts = true }) {
 
         setIsSpeaking(true);
 
-        // Временно останавливаем распознавание во время речи
-        if (listeningRef.current) {
-            recogRef.current?.stop();
-        }
-
-        window.speechSynthesis.speak(utter);
+        utter.onstart = () => {
+            setIsSpeaking(true);
+            speechBlockedRef.current = true;
+        };
 
         utter.onend = () => {
             setIsSpeaking(false);
-            // Возобновляем распознавание после речи, если были в режиме listening
-            if (listeningRef.current) {
+            // 🔥 РАЗБЛОКИРУЕМ ЧЕРЕЗ ТАЙМАУТ ДЛЯ НАДЕЖНОСТИ
+            setTimeout(() => {
+                speechBlockedRef.current = false;
+                console.log('🎤 TTS ended - recognition unblocked');
+
+                // 🔥 ВОЗОБНОВЛЯЕМ РАСПОЗНАВАНИЕ ПОСЛЕ РЕЧИ ДАЖЕ ЕСЛИ БЫЛИ ОСТАНОВЛЕНЫ
+                // (для wake word detection)
                 setTimeout(() => {
                     try {
                         recogRef.current?.start();
+                        console.log('🔄 Restarted for wake word detection after speech');
                     } catch (e) {
                         console.log('Restart after speech failed:', e);
                     }
-                }, 500);
-            }
+                }, 300);
+            }, 500);
         };
+
+        utter.onerror = () => {
+            setIsSpeaking(false);
+            speechBlockedRef.current = false;
+
+            // 🔥 ТАКЖЕ ВОЗОБНОВЛЯЕМ ПРИ ОШИБКЕ TTS
+            setTimeout(() => {
+                try {
+                    recogRef.current?.start();
+                } catch (e) {
+                    console.log('Restart after TTS error failed:', e);
+                }
+            }, 300);
+        };
+
+        window.speechSynthesis.speak(utter);
+    };
+
+    const stopSpeaking = () => {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        speechBlockedRef.current = false;
     };
 
     const startListening = () => {
@@ -53,8 +88,11 @@ export function useVoice({ navigate, tts = true }) {
             recogRef.current.start();
             setIsListening(true);
             listeningRef.current = true;
+            shouldRestartRef.current = true;
+            isStoppedRef.current = false; // 🔥 СБРАСЫВАЕМ ФЛАГ ОСТАНОВКИ
             setStatus('listening');
             wakeWordDetectedRef.current = false;
+            console.log('🎤 Listening started');
         } catch (e) {
             console.error('Start listening error:', e);
         }
@@ -63,11 +101,26 @@ export function useVoice({ navigate, tts = true }) {
     const stopListening = () => {
         if (!recogRef.current) return;
         try {
+            shouldRestartRef.current = false;
             recogRef.current.stop();
             setIsListening(false);
             listeningRef.current = false;
+            isStoppedRef.current = true; // 🔥 УСТАНАВЛИВАЕМ ФЛАГ ОСТАНОВКИ
             setStatus('idle');
             wakeWordDetectedRef.current = false;
+            console.log('🎤 Listening stopped (but wake words still work)');
+
+            // 🔥 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: ПЕРЕЗАПУСКАЕМ ДЛЯ WAKE WORD DETECTION СРАЗУ
+            setTimeout(() => {
+                if (!speechBlockedRef.current) {
+                    try {
+                        recogRef.current?.start();
+                        console.log('🔄 Restarted for wake word detection after stop');
+                    } catch (e) {
+                        console.log('Restart after stop failed:', e);
+                    }
+                }
+            }, 300);
         } catch (e) {
             console.error('Stop listening error:', e);
         }
@@ -79,53 +132,98 @@ export function useVoice({ navigate, tts = true }) {
                 lang: 'ru-RU',
                 continuous: true,
                 interimResults: true,
-                onStart: () => setStatus('listening'),
+                onStart: () => {
+                    console.log('🎤 Recognition started, listening:', listeningRef.current, 'stopped:', isStoppedRef.current);
+                    setStatus(listeningRef.current ? 'listening' : 'wake-word-mode');
+                },
                 onEnd: () => {
-                    if (!isSpeaking) {
-                        setStatus(listeningRef.current ? 'listening' : 'idle');
+                    console.log('🎤 Recognition ended, shouldRestart:', shouldRestartRef.current, 'speechBlocked:', speechBlockedRef.current);
+
+                    // 🔥 ПРОВЕРЯЕМ БЛОКИРОВКУ ПЕРЕД ПЕРЕЗАПУСКОМ
+                    if (speechBlockedRef.current) {
+                        console.log('🔇 Skipping restart - speech blocked');
+                        return;
                     }
+
+                    // 🔥 КЛЮЧЕВОЕ: ПЕРЕЗАПУСКАЕМ ВСЕГДА ДЛЯ WAKE WORD DETECTION
+                    // ДАЖЕ ЕСЛИ БЫЛИ ОСТАНОВЛЕНЫ КОМАНДОЙ "СТОП"
+                    setTimeout(() => {
+                        if (!speechBlockedRef.current) {
+                            try {
+                                recogRef.current?.start();
+                                console.log('🔄 Auto-restarting (wake word mode)');
+                            } catch (e) {
+                                console.log('Auto-restart failed:', e);
+                            }
+                        }
+                    }, 100);
                 },
                 onError: (e) => {
                     console.error('Speech recognition error:', e);
                     setStatus('error');
-                    // Автоматически перезапускаем при ошибках
-                    if (listeningRef.current) {
-                        setTimeout(() => {
+
+                    // 🔥 ПЕРЕЗАПУСК ПРИ ОШИБКАХ ТОЖЕ ВСЕГДА
+                    setTimeout(() => {
+                        if (!speechBlockedRef.current) {
                             try {
                                 recogRef.current?.start();
+                                console.log('🔄 Error recovery restart');
                             } catch (err) {
-                                console.log('Auto-restart failed:', err);
+                                console.log('Error recovery restart failed:', err);
                             }
-                        }, 1000);
-                    }
+                        }
+                    }, 1000);
                 },
                 onResult: async ({ transcript, isFinal }) => {
-                    // Игнорируем распознавание во время речи ассистента
-                    if (isSpeaking) return;
+                    // 🔥 ПОЛНОСТЬЮ ИГНОРИРУЕМ РАСПОЗНАВАНИЕ ВО ВРЕМЯ РЕЧИ
+                    if (speechBlockedRef.current) {
+                        console.log('🔇 Ignoring - TTS active');
+                        return;
+                    }
 
                     setLastPhrase(transcript);
                     const normalized = (transcript || '').toLowerCase().trim();
 
-                    // Wake words detection - ДЕТЕКТИМ ТРИГГЕРНЫЕ СЛОВА ПОСТОЯННО
+                    console.log('🎯 Processing:', normalized, 'isFinal:', isFinal, 'isListening:', listeningRef.current, 'isStopped:', isStoppedRef.current);
+
+                    // 🔥 КЛЮЧЕВОЕ: WAKE WORDS DETECTION РАБОТАЕТ ВСЕГДА
+                    // ДАЖЕ ЕСЛИ МЫ В РЕЖИМЕ "СТОП"
                     const wakeWords = ['юни', 'юнивойс', 'уни', 'унивойс', 'univoice', 'uni'];
                     const woke = wakeWords.some((w) => normalized.includes(w));
 
-                    // 🔥 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Автоактивация работает ВСЕГДА, даже когда не слушаем
-                    if (woke && !listeningRef.current && !isSpeaking && !wakeWordDetectedRef.current) {
+                    if (woke && !listeningRef.current && !wakeWordDetectedRef.current) {
                         wakeWordDetectedRef.current = true;
-                        console.log('🔥 Wake word detected, starting listening...');
+                        console.log('🔥 Wake word detected, activating from stopped state!');
+
+                        // 🔥 СБРАСЫВАЕМ ФЛАГ ОСТАНОВКИ И АКТИВИРУЕМСЯ
+                        isStoppedRef.current = false;
                         startListening();
+
                         setTimeout(() => {
                             speak('Слушаю вас.');
-                        }, 300);
+                        }, 200);
+                        return;
+                    }
+
+                    // 🔥 ЕСЛИ МЫ В РЕЖИМЕ "СТОП" - ОБРАБАТЫВАЕМ ТОЛЬКО WAKE WORDS
+                    if (isStoppedRef.current && !listeningRef.current) {
+                        console.log('⏸️ In stopped mode, only processing wake words');
                         return;
                     }
 
                     // Если режим не активен — не обрабатываем команды
                     if (!listeningRef.current) return;
 
-                    if (isFinal && normalized.length > 2) { // Минимум 3 символа
-                        console.log('Processing command:', normalized);
+                    if (isFinal && normalized.length > 2) {
+                        // 🔥 ЗАЩИТА ОТ ПОВТОРНОЙ ОБРАБОТКИ
+                        const now = Date.now();
+                        if (now - lastCommandTimeRef.current < 1000) {
+                            console.log('⏱️ Skipping duplicate command');
+                            return;
+                        }
+                        lastCommandTimeRef.current = now;
+
+                        console.log('🎯 Executing command:', normalized);
                         await routeCommand({
                             phrase: transcript,
                             context: {
@@ -133,19 +231,20 @@ export function useVoice({ navigate, tts = true }) {
                                 navigate,
                                 startListening,
                                 stopListening,
+                                stopSpeaking,
                                 nlu: nluRef.current,
-                                isSpeaking
+                                isSpeaking: speechBlockedRef.current
                             }
                         });
                     }
                 }
             });
 
-            // 🔥 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: СРАЗУ ЗАПУСКАЕМ РАСПОЗНАВАНИЕ ДЛЯ ДЕТЕКЦИИ ТРИГГЕРНЫХ СЛОВ
-            console.log('Starting continuous recognition for wake word detection...');
+            // 🔥 СРАЗУ ЗАПУСКАЕМ НЕПРЕРЫВНОЕ РАСПОЗНАВАНИЕ ДЛЯ WAKE WORDS
+            console.log('🚀 Starting continuous recognition for wake words...');
             recogRef.current.start();
 
-            // NLU через OpenAI (если есть ключ)
+            // NLU через OpenAI
             const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
             if (apiKey) {
                 nluRef.current = new NLU({ apiKey });
@@ -157,7 +256,15 @@ export function useVoice({ navigate, tts = true }) {
         }
 
         return () => {
-            stopListening();
+            shouldRestartRef.current = false;
+            listeningRef.current = false;
+            isStoppedRef.current = false;
+            speechBlockedRef.current = false;
+            if (recogRef.current) {
+                try {
+                    recogRef.current.stop();
+                } catch (e) { }
+            }
             recogRef.current = null;
             nluRef.current = null;
             window.speechSynthesis.cancel();
@@ -172,6 +279,7 @@ export function useVoice({ navigate, tts = true }) {
         isSpeaking,
         startListening,
         stopListening,
+        stopSpeaking,
         speak
     };
 }
