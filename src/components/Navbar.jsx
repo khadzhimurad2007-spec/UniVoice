@@ -211,7 +211,7 @@ const NavBar = () => {
                                     })}
                                     onClick={closeMenu}
                                 >
-                                    🤖 AI Помощник
+                                    🤖 ЧАТ Помощник
                                 </NavLink>
                                 <NavLink
                                     to="/reminders"
